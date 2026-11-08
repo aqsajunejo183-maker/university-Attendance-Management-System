@@ -1,0 +1,476 @@
+import java.util.ArrayList;
+import java.util.Scanner;
+import java.time.LocalDate;
+
+// Student account and personal attendance information
+class Student {
+    private String name, rollNumber, username, password;
+    private int semester;
+
+    public Student(String name, String rollNumber, int semester,
+                   String username, String password) {
+        this.name = name;
+        this.rollNumber = rollNumber;
+        this.semester = semester;
+        this.username = username;
+        this.password = password;
+    }
+
+    public String getName() { return name; }
+    public String getRollNumber() { return rollNumber; }
+    public int getSemester() { return semester; }
+    public String getUsername() { return username; }
+    public boolean login(String u, String p) {
+        return username.equals(u) && password.equals(p);
+    }
+}
+
+// Teacher account
+class Teacher {
+    private String name, teacherId, username, password;
+
+    public Teacher(String name, String teacherId, String username, String password) {
+        this.name = name;
+        this.teacherId = teacherId;
+        this.username = username;
+        this.password = password;
+    }
+
+    public String getName() { return name; }
+    public String getTeacherId() { return teacherId; }
+    public String getUsername() { return username; }
+    public boolean login(String u, String p) {
+        return username.equals(u) && password.equals(p);
+    }
+}
+
+// One attendance entry
+class AttendanceRecord {
+    private String rollNumber, subject, date;
+    private boolean present;
+
+    public AttendanceRecord(String rollNumber, String subject,
+                            String date, boolean present) {
+        this.rollNumber = rollNumber;
+        this.subject = subject;
+        this.date = date;
+        this.present = present;
+    }
+
+    public String getRollNumber() { return rollNumber; }
+    public String getSubject() { return subject; }
+    public String getDate() { return date; }
+    public boolean isPresent() { return present; }
+}
+
+public class Main {
+    private static final Scanner input = new Scanner(System.in);
+    private static final ArrayList<Student> students = new ArrayList<Student>();
+    private static final ArrayList<Teacher> teachers = new ArrayList<Teacher>();
+    private static final ArrayList<AttendanceRecord> records =
+            new ArrayList<AttendanceRecord>();
+
+    private static final String ADMIN_USER = "admin";
+    private static final String ADMIN_PASS = "admin123";
+
+    public static void main(String[] args) {
+        System.out.println("==============================================");
+        System.out.println(" SMART UNIVERSITY ATTENDANCE MANAGEMENT SYSTEM");
+        System.out.println("==============================================");
+
+        while (true) {
+            System.out.println("\n1. Admin Login");
+            System.out.println("2. Teacher Login");
+            System.out.println("3. Student Login");
+            System.out.println("4. Exit");
+            int choice = readInt("Enter choice: ");
+
+            switch (choice) {
+                case 1: adminLogin(); break;
+                case 2: teacherLogin(); break;
+                case 3: studentLogin(); break;
+                case 4:
+                    System.out.println("Thank you for using the system.");
+                    return;
+                default: System.out.println("Invalid choice.");
+            }
+        }
+    }
+
+    private static String readLine(String message) {
+        System.out.print(message);
+        return input.nextLine().trim();
+    }
+
+    private static int readInt(String message) {
+        while (true) {
+            try {
+                return Integer.parseInt(readLine(message));
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter a valid number.");
+            }
+        }
+    }
+
+    private static boolean usernameExists(String username) {
+        if (ADMIN_USER.equalsIgnoreCase(username)) return true;
+        for (Student s : students)
+            if (s.getUsername().equalsIgnoreCase(username)) return true;
+        for (Teacher t : teachers)
+            if (t.getUsername().equalsIgnoreCase(username)) return true;
+        return false;
+    }
+
+    // ADMIN
+    private static void adminLogin() {
+        String u = readLine("Admin username: ");
+        String p = readLine("Admin password: ");
+        if (ADMIN_USER.equals(u) && ADMIN_PASS.equals(p)) {
+            System.out.println("\nAdmin login successful.");
+            adminMenu();
+        } else {
+            System.out.println("Incorrect admin username or password.");
+        }
+    }
+
+    private static void adminMenu() {
+        while (true) {
+            System.out.println("\n========== ADMIN PANEL ==========");
+            System.out.println("1. Add Student");
+            System.out.println("2. Add Teacher");
+            System.out.println("3. View Students");
+            System.out.println("4. View Teachers");
+            System.out.println("5. View All Attendance");
+            System.out.println("6. Daily Attendance Report");
+            System.out.println("7. Delete Attendance Record");
+            System.out.println("8. Logout");
+            int c = readInt("Enter choice: ");
+
+            switch (c) {
+                case 1: addStudent(); break;
+                case 2: addTeacher(); break;
+                case 3: viewStudents(); break;
+                case 4: viewTeachers(); break;
+                case 5: viewAllAttendance(); break;
+                case 6: dailyReport(); break;
+                case 7: deleteAttendance(); break;
+                case 8: return;
+                default: System.out.println("Invalid choice.");
+            }
+        }
+    }
+
+    private static void addStudent() {
+        String name = readLine("Student name: ");
+        String roll = readLine("Roll number: ");
+        if (findStudent(roll) != null) {
+            System.out.println("This roll number already exists.");
+            return;
+        }
+        int semester = readInt("Semester: ");
+        String username = readLine("Create username: ");
+        if (username.isEmpty() || usernameExists(username)) {
+            System.out.println("Username is empty or already in use.");
+            return;
+        }
+        String password = readLine("Create password: ");
+        if (password.isEmpty()) {
+            System.out.println("Password cannot be empty.");
+            return;
+        }
+        students.add(new Student(name, roll, semester, username, password));
+        System.out.println("Student added successfully.");
+    }
+
+    private static void addTeacher() {
+        String name = readLine("Teacher name: ");
+        String id = readLine("Teacher ID: ");
+        String username = readLine("Create username: ");
+        if (username.isEmpty() || usernameExists(username)) {
+            System.out.println("Username is empty or already in use.");
+            return;
+        }
+        String password = readLine("Create password: ");
+        if (password.isEmpty()) {
+            System.out.println("Password cannot be empty.");
+            return;
+        }
+        teachers.add(new Teacher(name, id, username, password));
+        System.out.println("Teacher added successfully.");
+    }
+
+    private static void viewStudents() {
+        if (students.isEmpty()) {
+            System.out.println("No students found.");
+            return;
+        }
+        System.out.println("\n--- STUDENT LIST ---");
+        for (Student s : students) {
+            System.out.println("Name: " + s.getName() + " | Roll: "
+                    + s.getRollNumber() + " | Semester: " + s.getSemester()
+                    + " | Username: " + s.getUsername());
+        }
+    }
+
+    private static void viewTeachers() {
+        if (teachers.isEmpty()) {
+            System.out.println("No teachers found.");
+            return;
+        }
+        System.out.println("\n--- TEACHER LIST ---");
+        for (Teacher t : teachers) {
+            System.out.println("Name: " + t.getName() + " | ID: "
+                    + t.getTeacherId() + " | Username: " + t.getUsername());
+        }
+    }
+
+    private static void viewAllAttendance() {
+        if (records.isEmpty()) {
+            System.out.println("No attendance records found.");
+            return;
+        }
+        System.out.println("\n--- ALL ATTENDANCE RECORDS ---");
+        for (int i = 0; i < records.size(); i++) {
+            printRecord(i, records.get(i));
+        }
+    }
+
+    private static void dailyReport() {
+        String date = readLine("Enter date (YYYY-MM-DD): ");
+        boolean found = false;
+        for (int i = 0; i < records.size(); i++) {
+            AttendanceRecord r = records.get(i);
+            if (r.getDate().equals(date)) {
+                printRecord(i, r);
+                found = true;
+            }
+        }
+        if (!found) System.out.println("No records for this date.");
+    }
+
+    private static void deleteAttendance() {
+        viewAllAttendance();
+        if (records.isEmpty()) return;
+        int number = readInt("Enter record number to delete: ");
+        if (number < 1 || number > records.size()) {
+            System.out.println("Invalid record number.");
+            return;
+        }
+        records.remove(number - 1);
+        System.out.println("Attendance record deleted.");
+    }
+
+    // TEACHER
+    private static void teacherLogin() {
+        String u = readLine("Teacher username: ");
+        String p = readLine("Teacher password: ");
+        Teacher loggedIn = null;
+        for (Teacher t : teachers) {
+            if (t.login(u, p)) {
+                loggedIn = t;
+                break;
+            }
+        }
+        if (loggedIn == null) {
+            System.out.println("Incorrect teacher username or password.");
+            return;
+        }
+        System.out.println("Welcome, " + loggedIn.getName() + ".");
+        teacherMenu();
+    }
+
+    private static void teacherMenu() {
+        while (true) {
+            System.out.println("\n========== TEACHER PANEL ==========");
+            System.out.println("1. Mark Attendance");
+            System.out.println("2. View Attendance Records");
+            System.out.println("3. Subject and Semester Report");
+            System.out.println("4. View Student Percentages");
+            System.out.println("5. Logout");
+            int c = readInt("Enter choice: ");
+            switch (c) {
+                case 1: markAttendance(); break;
+                case 2: viewAllAttendance(); break;
+                case 3: subjectReport(); break;
+                case 4: allPercentages(); break;
+                case 5: return;
+                default: System.out.println("Invalid choice.");
+            }
+        }
+    }
+
+    private static void markAttendance() {
+        String roll = readLine("Student roll number: ");
+        Student student = findStudent(roll);
+        if (student == null) {
+            System.out.println("Student not found.");
+            return;
+        }
+        String subject = readLine("Subject name: ");
+        String date = LocalDate.now().toString();
+
+        for (AttendanceRecord r : records) {
+            if (r.getRollNumber().equals(roll)
+                    && r.getSubject().equalsIgnoreCase(subject)
+                    && r.getDate().equals(date)) {
+                System.out.println("Attendance already marked for this student, subject and date.");
+                return;
+            }
+        }
+
+        System.out.println("1. Present");
+        System.out.println("2. Absent");
+        int status = readInt("Select status: ");
+        if (status != 1 && status != 2) {
+            System.out.println("Invalid attendance status.");
+            return;
+        }
+        records.add(new AttendanceRecord(roll, subject, date, status == 1));
+        System.out.println("Attendance marked successfully for " + student.getName() + ".");
+    }
+
+    private static void subjectReport() {
+        String subject = readLine("Subject name: ");
+        int semester = readInt("Semester: ");
+        boolean found = false;
+        for (Student s : students) {
+            if (s.getSemester() == semester) {
+                int total = 0, attended = 0;
+                for (AttendanceRecord r : records) {
+                    if (r.getRollNumber().equals(s.getRollNumber())
+                            && r.getSubject().equalsIgnoreCase(subject)) {
+                        total++;
+                        if (r.isPresent()) attended++;
+                    }
+                }
+                System.out.println(s.getName() + " (" + s.getRollNumber()
+                        + "): " + percentage(attended, total) + "%");
+                found = true;
+            }
+        }
+        if (!found) System.out.println("No students found for this semester.");
+    }
+
+    private static void allPercentages() {
+        if (students.isEmpty()) {
+            System.out.println("No students found.");
+            return;
+        }
+        for (Student s : students) {
+            int total = 0, attended = 0;
+            for (AttendanceRecord r : records) {
+                if (r.getRollNumber().equals(s.getRollNumber())) {
+                    total++;
+                    if (r.isPresent()) attended++;
+                }
+            }
+            System.out.println(s.getName() + " (" + s.getRollNumber()
+                    + "): " + percentage(attended, total) + "% - "
+                    + attendanceStatus(percentage(attended, total)));
+        }
+    }
+
+    // STUDENT: a logged-in student can only view their own records
+    private static void studentLogin() {
+        String u = readLine("Student username: ");
+        String p = readLine("Student password: ");
+        Student loggedIn = null;
+        for (Student s : students) {
+            if (s.login(u, p)) {
+                loggedIn = s;
+                break;
+            }
+        }
+        if (loggedIn == null) {
+            System.out.println("Incorrect student username or password.");
+            return;
+        }
+        System.out.println("Welcome, " + loggedIn.getName() + ".");
+        studentMenu(loggedIn);
+    }
+
+    private static void studentMenu(Student student) {
+        while (true) {
+            System.out.println("\n========== STUDENT PANEL ==========");
+            System.out.println("1. View My Attendance");
+            System.out.println("2. View My Attendance Percentage");
+            System.out.println("3. Check My Attendance Status");
+            System.out.println("4. Logout");
+            int c = readInt("Enter choice: ");
+            switch (c) {
+                case 1: viewMyAttendance(student); break;
+                case 2: showMyPercentage(student); break;
+                case 3:
+                    double pct = getMyPercentage(student);
+                    System.out.println("Your status: " + attendanceStatus(pct));
+                    break;
+                case 4: return;
+                default: System.out.println("Invalid choice.");
+            }
+        }
+    }
+
+    private static void viewMyAttendance(Student student) {
+        boolean found = false;
+        for (AttendanceRecord r : records) {
+            if (r.getRollNumber().equals(student.getRollNumber())) {
+                System.out.println(r.getDate() + " | " + r.getSubject()
+                        + " | " + (r.isPresent() ? "Present" : "Absent"));
+                found = true;
+            }
+        }
+        if (!found) System.out.println("No attendance records found.");
+    }
+
+    private static void showMyPercentage(Student student) {
+        int total = 0, attended = 0;
+        for (AttendanceRecord r : records) {
+            if (r.getRollNumber().equals(student.getRollNumber())) {
+                total++;
+                if (r.isPresent()) attended++;
+            }
+        }
+        double pct = percentage(attended, total);
+        System.out.printf("Attendance: %d/%d | Percentage: %.2f%%%n",
+                attended, total, pct);
+    }
+
+    private static double getMyPercentage(Student student) {
+        int total = 0, attended = 0;
+        for (AttendanceRecord r : records) {
+            if (r.getRollNumber().equals(student.getRollNumber())) {
+                total++;
+                if (r.isPresent()) attended++;
+            }
+        }
+        return percentage(attended, total);
+    }
+
+    // COMMON METHODS
+    private static Student findStudent(String roll) {
+        for (Student s : students)
+            if (s.getRollNumber().equalsIgnoreCase(roll)) return s;
+        return null;
+    }
+
+    private static double percentage(int attended, int total) {
+        if (total == 0) return 0.0;
+        return (attended * 100.0) / total;
+    }
+
+    private static String attendanceStatus(double pct) {
+        if (pct < 75) return "LOW";
+        if (pct < 85) return "AVERAGE";
+        return "GOOD";
+    }
+
+    private static void printRecord(int index, AttendanceRecord r) {
+        Student s = findStudent(r.getRollNumber());
+        String studentName = (s == null) ? "Unknown" : s.getName();
+        System.out.println((index + 1) + ". " + studentName
+                + " | Roll: " + r.getRollNumber()
+                + " | Subject: " + r.getSubject()
+                + " | Date: " + r.getDate()
+                + " | Status: " + (r.isPresent() ? "Present" : "Absent"));
+    }
+}
